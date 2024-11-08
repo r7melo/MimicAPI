@@ -1,5 +1,7 @@
+using AutoMapper;
 using Microsoft.EntityFrameworkCore;
 using MimicAPI.Database;
+using MimicAPI.Helpers;
 using MimicAPI.Repositories;
 using MimicAPI.Repositories.Contracts;
 
@@ -12,6 +14,15 @@ builder.Services.AddDbContext<MimicContext>(options =>
     options.UseSqlite("Data Source=Database\\mimic.db"));
 
 builder.Services.AddScoped<IPalavraRepository, PalavraRepository>();
+
+#region AutoMapper - Configuração
+var config = new MapperConfiguration(cfg => {
+    cfg.AddProfile(new DTOMapperProfile());
+});
+IMapper mapper = config.CreateMapper();
+builder.Services.AddSingleton(mapper);
+#endregion
+
 
 var app = builder.Build();
 
