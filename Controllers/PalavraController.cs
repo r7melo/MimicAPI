@@ -1,17 +1,17 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using MimicAPI.Database;
 using MimicAPI.Models;
+using MimicAPI.Repositories.Contracts;
 
 namespace MimicAPI.Controllers
 {
     [Route("api/palavras")]
     public class PalavraController : Controller
     {
-        private readonly MimicContext _banco;
+        private readonly IPalavraRepository _repository;
 
-        public PalavraController(MimicContext banco)
+        public PalavraController(IPalavraRepository banco)
         {
-            _banco = banco;
+            _repository = banco;
         }
 
         // APP -- /api/palavras (GET)
@@ -19,13 +19,7 @@ namespace MimicAPI.Controllers
         [HttpGet]
         public ActionResult ObterTodas(DateTime? data)
         {
-            var palavras = _banco.Palavras.AsQueryable();
-            palavras = palavras.Where(p => p.Ativo == true);
-
-            if (data.HasValue)
-            {
-                palavras = palavras.Where(p => p.Criado > data.Value);
-            }
+            List<Palavra> palavras = _repository.ObterPalavras(data);
 
             return Ok(palavras);
         }
@@ -35,7 +29,7 @@ namespace MimicAPI.Controllers
         [HttpGet]
         public ActionResult Obter(long id)
         {
-            Palavra palavra = _banco.Palavras.Find(id);
+            Palavra palavra = _repository.Obter(id);
 
             if (palavra == null || !palavra.Ativo)
                 return NotFound();
@@ -48,10 +42,9 @@ namespace MimicAPI.Controllers
         [HttpPost]
         public ActionResult Cadastrar([FromBody]  Palavra palavra)
         {
-            palavra.Criado = DateTime.Now;
+            long id = _repository.Cadastrar(palavra);
 
-            _banco.Palavras.Add(palavra);
-            _banco.SaveChanges();
+            palavra = _repository.Obter(id);
 
             return Created($"/api/palavras/{palavra.Id}", palavra);
         }
@@ -61,20 +54,16 @@ namespace MimicAPI.Controllers
         [HttpPut]
         public ActionResult Atualizar(long id, [FromBody] Palavra nova_palavra)
         {
-            Palavra palavra = _banco.Palavras.Find(id);
+            Palavra palavra = _repository.Obter(id);
 
             if (palavra == null || !palavra.Ativo)
                 return NotFound();
 
-            palavra.Nome = nova_palavra.Nome;
-            palavra.Pontuacao = nova_palavra.Pontuacao;
-            palavra.Ativo = nova_palavra.Ativo;
-            palavra.Atualizacao = DateTime.Now;
+            nova_palavra.Id = palavra.Id;
 
-            _banco.Palavras.Update(palavra);
-            _banco.SaveChanges();
+            _repository.Atualizar(nova_palavra);
 
-            return Ok(palavra);
+            return Ok();
         }
 
         // WEB -- /api/palavras/1 (DELETE)
@@ -82,15 +71,12 @@ namespace MimicAPI.Controllers
         [HttpDelete]
         public ActionResult Deletar(long id)
         {
-            Palavra palavra = _banco.Palavras.Find(id);
+            Palavra p_aux = _repository.Obter(id);
 
-            if (palavra == null || !palavra.Ativo)
+            if (p_aux == null || !p_aux.Ativo)
                 return NotFound();
 
-            palavra.Ativo = false;
-
-            _banco.Palavras.Update(palavra);
-            _banco.SaveChanges();
+            _repository.Deletar(id);
 
             return NoContent();
         }

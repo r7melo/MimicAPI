@@ -1,5 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using MimicAPI.Database;
+using MimicAPI.Repositories;
+using MimicAPI.Repositories.Contracts;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -8,6 +10,8 @@ builder.Services.AddControllersWithViews();
 
 builder.Services.AddDbContext<MimicContext>(options =>
     options.UseSqlite("Data Source=Database\\mimic.db"));
+
+builder.Services.AddScoped<IPalavraRepository, PalavraRepository>();
 
 var app = builder.Build();
 
